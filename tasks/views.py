@@ -1,5 +1,4 @@
 from rest_framework import generics, permissions
-from rest_framework.exceptions import PermissionDenied
 from .models import Task
 from .serializers import TaskSerializer
 
@@ -22,8 +21,4 @@ class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         return Task.objects.filter(user=self.request.user)
 
-    def get_object(self):
-        objeto = super().get_object()
-        if objeto.user != self.request.user:
-            raise PermissionDenied('Você não tem permissão para realizar esta ação.')
-        return objeto
+    
