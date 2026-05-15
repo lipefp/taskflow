@@ -78,7 +78,7 @@ Authorization: Token <seu_token>
 | `PATCH` | `/api/tasks/{id}/` | Atualizar tarefa parcialmente |
 | `DELETE` | `/api/tasks/{id}/` | Excluir tarefa |
 
-> Tarefas de outros usuários retornam `404` — não `403` — para não vazar informação de existência do recurso.
+> Tarefas de outros usuários retornam `403 Forbidden` com a mensagem `"Você não tem permissão para realizar esta ação."`
 
 ---
 
