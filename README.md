@@ -1,8 +1,8 @@
 # TaskFlow API
 
-API REST de gerenciamento de tarefas pessoais desenvolvida como avaliação de onboarding backend.
+API REST para gerenciamento de tarefas pessoais, desenvolvida com Django e Django REST Framework.
 
-Cada usuário gerencia apenas suas próprias tarefas, com autenticação via token e regras de negócio para controle de status.
+Cada usuário acessa apenas suas próprias tarefas. A autenticação é feita via token e o status das tarefas segue um fluxo controlado.
 
 ---
 
@@ -13,32 +13,27 @@ Cada usuário gerencia apenas suas próprias tarefas, com autenticação via tok
 | Python + Django 6.0.5 | Framework principal |
 | Django REST Framework | Camada de API |
 | MariaDB | Banco de dados |
-| Token Authentication | Autenticação stateless |
-| python-decouple | Gerenciamento de variáveis de ambiente |
+| Token Authentication | Autenticação |
+| python-decouple | Variáveis de ambiente |
 
 ---
 
 ## Instalação
 
-**Pré-requisitos:** Python 3.x e MariaDB rodando localmente.
+Pré-requisitos: Python 3.x e MariaDB rodando localmente.
 
 ```bash
 git clone https://github.com/lipefp/taskflow
 cd taskflow
-
 python -m venv venv
 source venv/bin/activate
-
 pip install -r requirements.txt
-
 cp .env.example .env
-# edite o .env com suas credenciais do banco
-
 python manage.py migrate
 python manage.py runserver
 ```
 
-### Variáveis de ambiente (.env)
+Configure o `.env` com suas credenciais antes de rodar:
 
 ```env
 DEBUG=True
@@ -59,56 +54,38 @@ DB_PORT=3306
 
 | Método | Endpoint | Descrição |
 |---|---|---|
-| `POST` | `/api/accounts/register/` | Cadastrar novo usuário |
-| `POST` | `/api/accounts/login/` | Login — retorna o token de acesso |
+| `POST` | `/api/accounts/register/` | Cadastrar usuário |
+| `POST` | `/api/accounts/login/` | Login — retorna o token |
 
 ### Tarefas
 
-Todos os endpoints abaixo exigem o header:
-```
-Authorization: Token <seu_token>
-```
+Todos exigem o header `Authorization: Token <seu_token>`.
 
 | Método | Endpoint | Descrição |
 |---|---|---|
-| `GET` | `/api/tasks/` | Listar tarefas do usuário autenticado |
-| `POST` | `/api/tasks/` | Criar nova tarefa |
-| `GET` | `/api/tasks/{id}/` | Detalhar uma tarefa |
+| `GET` | `/api/tasks/` | Listar tarefas |
+| `POST` | `/api/tasks/` | Criar tarefa |
+| `GET` | `/api/tasks/{id}/` | Detalhar tarefa |
 | `PUT` | `/api/tasks/{id}/` | Atualizar tarefa completa |
-| `PATCH` | `/api/tasks/{id}/` | Atualizar tarefa parcialmente |
+| `PATCH` | `/api/tasks/{id}/` | Atualizar parcialmente |
 | `DELETE` | `/api/tasks/{id}/` | Excluir tarefa |
 
-> Tarefas de outros usuários retornam `403 Forbidden` com a mensagem `"Você não tem permissão para realizar esta ação."`
+Tentar acessar a tarefa de outro usuário retorna `403 Forbidden`.
 
 ---
 
 ## Filtros e Paginação
 
-```bash
-# Filtrar por status
+```
 GET /api/tasks/?status=pending
 GET /api/tasks/?status=in_progress
 GET /api/tasks/?status=done
-
-# Navegar entre páginas
 GET /api/tasks/?page=2
-```
-
-A resposta paginada tem o formato:
-```json
-{
-    "count": 10,
-    "next": "http://127.0.0.1:8000/api/tasks/?page=2",
-    "previous": null,
-    "results": [...]
-}
 ```
 
 ---
 
-## Regras de Transição de Status
-
-Uma tarefa nasce com status `pending` e só pode avançar — nunca voltar.
+## Regras de Status
 
 ```
 pending ──► in_progress ──► done
@@ -117,50 +94,28 @@ pending ──► in_progress ──► done
         (pulo direto permitido)
 ```
 
-| De / Para | `pending` | `in_progress` | `done` |
+| De / Para | pending | in_progress | done |
 |---|---|---|---|
-| `pending` | — | ✅ | ✅ |
-| `in_progress` | ❌ | — | ✅ |
-| `done` | ❌ | ❌ | — |
+| pending | — | ✅ | ✅ |
+| in_progress | ❌ | — | ✅ |
+| done | ❌ | ❌ | — |
 
-Transições inválidas retornam `400 Bad Request` com mensagem descritiva:
-```json
-{
-    "status": ["Transição inválida de done para pending."]
-}
-```
+Transições inválidas retornam `400 Bad Request`.
 
 ---
 
-## Exemplos de uso
+## Tratamento de Erros
 
-**Registrar usuário**
-```bash
-curl -X POST http://127.0.0.1:8000/api/accounts/register/ \
-  -H "Content-Type: application/json" \
-  -d '{"username": "felipe", "password": "senha123"}'
+`400 Bad Request` — campo obrigatório ausente:
+```json
+{
+  "title": ["Este campo não pode ser vazio."]
+}
 ```
 
-**Login**
-```bash
-curl -X POST http://127.0.0.1:8000/api/accounts/login/ \
-  -H "Content-Type: application/json" \
-  -d '{"username": "felipe", "password": "senha123"}'
-# → {"token": "abc123..."}
-```
-
-**Criar tarefa**
-```bash
-curl -X POST http://127.0.0.1:8000/api/tasks/ \
-  -H "Authorization: Token abc123..." \
-  -H "Content-Type: application/json" \
-  -d '{"title": "Estudar DRF", "due_date": "2026-05-30"}'
-```
-
-**Atualizar status**
-```bash
-curl -X PATCH http://127.0.0.1:8000/api/tasks/1/ \
-  -H "Authorization: Token abc123..." \
-  -H "Content-Type: application/json" \
-  -d '{"status": "in_progress"}'
+`403 Forbidden` — acesso à tarefa de outro usuário:
+```json
+{
+  "detail": "Você não tem permissão para realizar esta ação."
+}
 ```
