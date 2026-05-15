@@ -2,7 +2,12 @@ from rest_framework import serializers
 from .models import Task
 
 class TaskSerializer(serializers.ModelSerializer):
-
+    title = serializers.CharField(
+        error_messages={
+            'blank': 'Este campo não pode ser vazio.',
+            'required': 'Este campo não pode ser vazio',
+        }
+    )
     class Meta:
         model = Task
         fields = ['id', 'title', 'description', 'status', 'due_date', 'created_at', 'updated_at' ]
@@ -25,6 +30,6 @@ class TaskSerializer(serializers.ModelSerializer):
        
         if new_status != current_status and new_status not in allowed:
             raise serializers.ValidationError(
-                f'Transcição inválida de {current_status} para {new_status}.'
+                f'Transição inválida de {current_status} para {new_status}.'
             )
         return new_status
