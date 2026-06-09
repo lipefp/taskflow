@@ -1,121 +1,108 @@
-# TaskFlow API
+# TaskFlow
 
-API REST para gerenciamento de tarefas pessoais, desenvolvida com Django e Django REST Framework.
+API REST para gerenciamento de tarefas pessoais, construída com **Django REST Framework** e autenticação por token.
 
-Cada usuário acessa apenas suas próprias tarefas. A autenticação é feita via token e o status das tarefas segue um fluxo controlado.
+![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
+![Django](https://img.shields.io/badge/django-%23092E20.svg?style=for-the-badge&logo=django&logoColor=white)
+![DRF](https://img.shields.io/badge/DRF-%23a30000.svg?style=for-the-badge&logo=django&logoColor=white)
+![MariaDB](https://img.shields.io/badge/MariaDB-003545?style=for-the-badge&logo=mariadb&logoColor=white)
+
+---
+
+## Sobre
+
+TaskFlow é uma API para criar, listar e acompanhar tarefas, com controle de fluxo de
+status e mensagens de erro em português. Cada usuário só enxerga e altera as próprias tarefas.
+
+### Funcionalidades
+
+- 🔐 Autenticação por **Token** (DRF Token Auth)
+- ✅ CRUD de tarefas
+- 🔄 Transição de status controlada: `PENDENTE` → `EM_PROGRESSO` → `CONCLUIDA` (estado final)
+- 🔎 Filtro por status
+- 📄 Paginação (`PageNumberPagination`)
+- 🇧🇷 Respostas e erros em português (`LANGUAGE_CODE = 'pt-br'`)
+- 🚫 Tratamento de acesso negado (HTTP 403) para tarefas de outros usuários
 
 ---
 
 ## Stack
 
-| Tecnologia | Função |
-|---|---|
-| Python + Django 6.0.5 | Framework principal |
-| Django REST Framework | Camada de API |
-| MariaDB | Banco de dados |
-| Token Authentication | Autenticação |
-| python-decouple | Variáveis de ambiente |
+- **Python** + **Django** + **Django REST Framework**
+- **MariaDB**
+- Autenticação: DRF Token Authentication
 
 ---
 
-## Instalação
+## Como rodar
 
-Pré-requisitos: Python 3.x e MariaDB rodando localmente.
+> Ajuste os comandos abaixo ao seu `settings.py` / `requirements.txt` reais.
 
 ```bash
-git clone https://github.com/lipefp/taskflow
+# clonar
+git clone https://github.com/lipefp/taskflow.git
 cd taskflow
-python -m venv venv
-source venv/bin/activate
+
+# ambiente virtual
+python -m venv .venv
+source .venv/bin/activate        # Linux/macOS
+# .venv\Scripts\activate         # Windows
+
+# dependências
 pip install -r requirements.txt
-cp .env.example .env
+
+# banco (MariaDB) — configure as credenciais em settings.py / .env antes
 python manage.py migrate
+
+# usuário admin (opcional)
+python manage.py createsuperuser
+
+# subir o servidor
 python manage.py runserver
 ```
 
-Configure o `.env` com suas credenciais antes de rodar:
+A API fica disponível em `http://127.0.0.1:8000/`.
 
-```env
-DEBUG=True
-SECRET_KEY=sua-secret-key
-ALLOWED_HOSTS=127.0.0.1,localhost
-DB_NAME=taskflow
-DB_USER=seu_usuario
-DB_PASSWORD=sua_senha
-DB_HOST=localhost
-DB_PORT=3306
+---
+
+## Autenticação
+
+Obtenha um token e use-o no header das requisições:
+
+```bash
+# obter token
+curl -X POST http://127.0.0.1:8000/api-token-auth/ \
+  -d "username=SEU_USER&password=SUA_SENHA"
+
+# usar o token
+curl http://127.0.0.1:8000/api/tasks/ \
+  -H "Authorization: Token SEU_TOKEN_AQUI"
 ```
 
 ---
 
 ## Endpoints
 
-### Autenticação
+> Tabela de referência — alinhe com o seu `urls.py`.
 
-| Método | Endpoint | Descrição |
-|---|---|---|
-| `POST` | `/api/accounts/register/` | Cadastrar usuário |
-| `POST` | `/api/accounts/login/` | Login — retorna o token |
-
-### Tarefas
-
-Todos exigem o header `Authorization: Token <seu_token>`.
-
-| Método | Endpoint | Descrição |
-|---|---|---|
-| `GET` | `/api/tasks/` | Listar tarefas |
-| `POST` | `/api/tasks/` | Criar tarefa |
-| `GET` | `/api/tasks/{id}/` | Detalhar tarefa |
-| `PUT` | `/api/tasks/{id}/` | Atualizar tarefa completa |
-| `PATCH` | `/api/tasks/{id}/` | Atualizar parcialmente |
-| `DELETE` | `/api/tasks/{id}/` | Excluir tarefa |
-
-Tentar acessar a tarefa de outro usuário retorna `403 Forbidden`.
+| Método | Rota | Descrição |
+| --- | --- | --- |
+| `POST` | `/api-token-auth/` | Retorna o token de autenticação |
+| `GET` | `/api/tasks/` | Lista as tarefas do usuário (paginada) |
+| `GET` | `/api/tasks/?status=PENDENTE` | Filtra por status |
+| `POST` | `/api/tasks/` | Cria uma tarefa |
+| `GET` | `/api/tasks/{id}/` | Detalha uma tarefa |
+| `PATCH` | `/api/tasks/{id}/` | Atualiza (inclui transição de status) |
+| `DELETE` | `/api/tasks/{id}/` | Remove uma tarefa |
 
 ---
 
-## Filtros e Paginação
+## Testes
 
-```
-GET /api/tasks/?status=pending
-GET /api/tasks/?status=in_progress
-GET /api/tasks/?status=done
-GET /api/tasks/?page=2
-```
+Coleção testada com **Bruno** (alternativa open-source ao Postman).
 
 ---
 
-## Regras de Status
+## Autor
 
-```
-pending ──► in_progress ──► done
-   │                          ▲
-   └──────────────────────────┘
-        (pulo direto permitido)
-```
-
-| De / Para | pending | in_progress | done |
-|---|---|---|---|
-| pending | — | ✅ | ✅ |
-| in_progress | ❌ | — | ✅ |
-| done | ❌ | ❌ | — |
-
-Transições inválidas retornam `400 Bad Request`.
-
----
-
-## Tratamento de Erros
-
-`400 Bad Request` — campo obrigatório ausente:
-```json
-{
-  "title": ["Este campo não pode ser vazio."]
-}
-```
-
-`403 Forbidden` — acesso à tarefa de outro usuário:
-```json
-{
-  "detail": "Você não tem permissão para realizar esta ação."
-}
-```
+**Felipe Diniz** · [GitHub](https://github.com/lipefp) · [LinkedIn](https://www.linkedin.com/in/felipe-diniz-39237b288)
