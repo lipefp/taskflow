@@ -105,4 +105,4 @@ Coleção testada com **Bruno** (alternativa open-source ao Postman).
 
 ## Autor
 
-**Felipe Diniz** · [GitHub](https://github.com/lipefp) · [LinkedIn](https://www.linkedin.com/in/felipe-diniz-39237b288)
+**Felipe Diniz** · [GitHub](https://github.com/lipefp) · [LinkedIn](https://www.linkedin.com/in/felipe-diniz1)
