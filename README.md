@@ -36,8 +36,6 @@ status e mensagens de erro em português. Cada usuário só enxerga e altera as 
 
 ## Como rodar
 
-> Ajuste os comandos abaixo ao seu `settings.py` / `requirements.txt` reais.
-
 ```bash
 # clonar
 git clone https://github.com/lipefp/taskflow.git
@@ -82,8 +80,6 @@ curl http://127.0.0.1:8000/api/tasks/ \
 ---
 
 ## Endpoints
-
-> Tabela de referência — alinhe com o seu `urls.py`.
 
 | Método | Rota | Descrição |
 | --- | --- | --- |
